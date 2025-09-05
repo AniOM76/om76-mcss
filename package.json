@@ -1,0 +1,51 @@
+{
+  "name": "om76-mcss",
+  "version": "1.0.0",
+  "description": "Multi-Calendar Sync Service - Railway hosted service that synchronizes events across multiple Google Calendar accounts with privacy-preserving block events",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "migrate": "node scripts/migrate.js",
+    "setup": "node scripts/setup.js",
+    "test": "jest",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "keywords": [
+    "calendar",
+    "sync",
+    "google-calendar",
+    "railway",
+    "privacy",
+    "scheduling"
+  ],
+  "author": "OM76",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "googleapis": "^128.0.0",
+    "pg": "^8.11.3",
+    "bull": "^4.11.4",
+    "redis": "^4.6.10",
+    "helmet": "^7.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "uuid": "^9.0.1",
+    "moment": "^2.29.4",
+    "moment-timezone": "^0.5.43"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "jest": "^29.7.0",
+    "eslint": "^8.52.0",
+    "prettier": "^3.0.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AniOM76/om76-mcss.git"
+  }
+}
