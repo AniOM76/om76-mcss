@@ -230,4 +230,126 @@ router.get('/stats', async (req, res) => {
   }
 });
 
+router.post('/webhooks/setup-all', async (req, res) => {
+  try {
+    console.log('OM76.MCSS: Setting up webhooks for all active calendars...');
+    
+    const calendars = await googleManager.getCalendarConfigs();
+    const activeCalendars = calendars.filter(cal => cal.is_active);
+    
+    if (activeCalendars.length === 0) {
+      return res.status(400).json({ 
+        error: 'No active calendars found',
+        message: 'Ensure calendars are authorized and active before setting up webhooks'
+      });
+    }
+
+    const results = [];
+    
+    for (const calendar of activeCalendars) {
+      try {
+        const calendarService = await googleManager.authenticateCalendar(calendar.refresh_token);
+        const webhookData = await googleManager.setupWebhook(calendarService, calendar.calendar_id);
+        
+        results.push({
+          calendar_id: calendar.calendar_id,
+          calendar_alias: calendar.calendar_alias,
+          status: 'success',
+          webhook_id: webhookData.id,
+          webhook_resource_id: webhookData.resourceId,
+          expires: webhookData.expiration
+        });
+        
+        console.log(`OM76.MCSS: Webhook setup successful for ${calendar.calendar_alias}`);
+      } catch (error) {
+        console.error(`OM76.MCSS: Webhook setup failed for ${calendar.calendar_alias}:`, error);
+        
+        results.push({
+          calendar_id: calendar.calendar_id,
+          calendar_alias: calendar.calendar_alias,
+          status: 'failed',
+          error: error.message
+        });
+      }
+    }
+    
+    const successCount = results.filter(r => r.status === 'success').length;
+    const failureCount = results.filter(r => r.status === 'failed').length;
+    
+    res.json({
+      message: `Webhook setup completed: ${successCount} successful, ${failureCount} failed`,
+      results: results,
+      summary: {
+        total: activeCalendars.length,
+        successful: successCount,
+        failed: failureCount
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('OM76.MCSS: Webhook setup error:', error);
+    res.status(500).json({
+      error: 'Failed to setup webhooks',
+      message: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+router.get('/webhooks/status', async (req, res) => {
+  try {
+    const calendars = await query(`
+      SELECT 
+        calendar_id,
+        calendar_alias,
+        calendar_name,
+        webhook_id,
+        webhook_resource_id,
+        is_active,
+        updated_at
+      FROM mcss_calendar_configs 
+      ORDER BY calendar_alias
+    `);
+    
+    res.json({
+      service: 'OM76.MCSS Webhook Status',
+      calendars: calendars.rows.map(cal => ({
+        ...cal,
+        webhook_configured: !!(cal.webhook_id && cal.webhook_resource_id),
+        webhook_url: cal.webhook_id ? `${process.env.WEBHOOK_BASE_URL}/webhooks/calendar/${cal.calendar_id}` : null
+      })),
+      webhook_base_url: process.env.WEBHOOK_BASE_URL,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('OM76.MCSS: Webhook status error:', error);
+    res.status(500).json({
+      error: 'Failed to get webhook status',
+      message: error.message
+    });
+  }
+});
+
+router.delete('/webhooks/cleanup', async (req, res) => {
+  try {
+    console.log('OM76.MCSS: Cleaning up webhook configurations...');
+    
+    const result = await query(
+      'UPDATE mcss_calendar_configs SET webhook_id = NULL, webhook_resource_id = NULL WHERE webhook_id IS NOT NULL'
+    );
+    
+    res.json({
+      message: `Webhook cleanup completed: ${result.rowCount} calendars updated`,
+      cleared: result.rowCount,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('OM76.MCSS: Webhook cleanup error:', error);
+    res.status(500).json({
+      error: 'Failed to cleanup webhooks',
+      message: error.message
+    });
+  }
+});
+
 module.exports = router;

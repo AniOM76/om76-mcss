@@ -39,7 +39,7 @@ class GoogleCalendarManager {
         }
       };
       
-      const response = await calendarService.events().watch({
+      const response = await calendarService.events.watch({
         calendarId: calendarId,
         requestBody: watchRequest
       });
@@ -69,7 +69,7 @@ class GoogleCalendarManager {
       if (timeMin) params.timeMin = timeMin;
       if (timeMax) params.timeMax = timeMax;
 
-      const response = await calendarService.events().list(params);
+      const response = await calendarService.events.list(params);
       return response.data.items || [];
     } catch (error) {
       console.error(`OM76.MCSS: Failed to get events from calendar ${calendarId}:`, error);
@@ -88,7 +88,7 @@ class GoogleCalendarManager {
         transparency: 'opaque'
       };
 
-      const response = await calendarService.events().insert({
+      const response = await calendarService.events.insert({
         calendarId: targetCalendarId,
         requestBody: blockEvent
       });
@@ -109,7 +109,7 @@ class GoogleCalendarManager {
         description: `Private block event created by OM76.MCSS\nOriginal: ${originalEvent.summary || 'No title'}`
       };
 
-      const response = await calendarService.events().update({
+      const response = await calendarService.events.update({
         calendarId: targetCalendarId,
         eventId: blockEventId,
         requestBody: updateData
@@ -125,7 +125,7 @@ class GoogleCalendarManager {
 
   async deleteBlockEvent(calendarService, targetCalendarId, blockEventId) {
     try {
-      await calendarService.events().delete({
+      await calendarService.events.delete({
         calendarId: targetCalendarId,
         eventId: blockEventId
       });

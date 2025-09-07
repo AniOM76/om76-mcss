@@ -130,7 +130,7 @@ router.post('/manual-sync/:calendarId', async (req, res) => {
     const calendarService = await googleManager.authenticateCalendar(sourceConfig.refresh_token);
     
     try {
-      const event = await calendarService.events().get({
+      const event = await calendarService.events.get({
         calendarId: calendarId,
         eventId: eventId
       });
