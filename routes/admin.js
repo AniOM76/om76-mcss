@@ -352,4 +352,79 @@ router.delete('/webhooks/cleanup', async (req, res) => {
   }
 });
 
+router.post('/calendars', async (req, res) => {
+  try {
+    const { calendar_id, calendar_name, calendar_alias } = req.body;
+    
+    if (!calendar_id || !calendar_name || !calendar_alias) {
+      return res.status(400).json({ 
+        error: 'Missing required fields: calendar_id, calendar_name, calendar_alias' 
+      });
+    }
+
+    const existing = await query(
+      'SELECT id FROM mcss_calendar_configs WHERE calendar_id = $1',
+      [calendar_id]
+    );
+
+    if (existing.rows.length > 0) {
+      return res.status(409).json({ 
+        error: 'Calendar already exists',
+        calendar_id: calendar_id
+      });
+    }
+
+    const result = await query(
+      `INSERT INTO mcss_calendar_configs (calendar_id, calendar_name, calendar_alias, is_active) 
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [calendar_id, calendar_name, calendar_alias, true]
+    );
+
+    console.log(`OM76.MCSS: Added calendar configuration for ${calendar_alias}`);
+
+    res.json({
+      message: `Successfully added calendar ${calendar_alias}`,
+      calendar: result.rows[0],
+      next_steps: [
+        `Visit /auth/authorize/${calendar_id} to authorize this calendar`,
+        'Setup webhooks after authorization'
+      ],
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('OM76.MCSS: Add calendar error:', error);
+    res.status(500).json({
+      error: 'Failed to add calendar',
+      message: error.message
+    });
+  }
+});
+
+router.delete('/calendars/:calendarId', async (req, res) => {
+  try {
+    const { calendarId } = req.params;
+
+    const result = await query(
+      'DELETE FROM mcss_calendar_configs WHERE calendar_id = $1 RETURNING calendar_alias',
+      [calendarId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Calendar not found' });
+    }
+
+    res.json({
+      message: `Successfully removed calendar ${result.rows[0].calendar_alias}`,
+      calendar_id: calendarId,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('OM76.MCSS: Remove calendar error:', error);
+    res.status(500).json({
+      error: 'Failed to remove calendar',
+      message: error.message
+    });
+  }
+});
+
 module.exports = router;
