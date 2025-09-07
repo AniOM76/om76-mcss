@@ -30,8 +30,12 @@ class GoogleCalendarManager {
     try {
       const webhookUrl = `${process.env.WEBHOOK_BASE_URL}/webhooks/calendar/${calendarId}`;
       
+      // Create valid channel ID by removing invalid characters
+      const sanitizedId = calendarId.replace(/[@.]/g, '-');
+      const channelId = `om76-mcss-${sanitizedId}-${Date.now()}`;
+      
       const watchRequest = {
-        id: `om76-mcss-${calendarId}-${Date.now()}`,
+        id: channelId,
         type: 'web_hook',
         address: webhookUrl,
         params: {
