@@ -139,14 +139,12 @@ router.post('/manual-sync/:calendarId', async (req, res) => {
         return res.status(400).json({ error: 'Cannot sync block events' });
       }
 
-      const job = await addOM76SyncJob(event.data, calendarId, 'high');
+      // Direct sync bypass queue for testing
+      const { syncEventAcrossCalendars } = require('../services/syncService');
+      await syncEventAcrossCalendars(event.data, calendarId);
       
-      await logSyncActivity('manual_sync_requested', calendarId, eventId, 'info', 
-        'Manual sync job queued');
-
       res.status(200).json({
-        message: 'Manual sync queued successfully',
-        jobId: job.id,
+        message: 'Manual sync completed successfully',
         eventId: eventId,
         calendar: calendarId,
         timestamp: new Date().toISOString()
